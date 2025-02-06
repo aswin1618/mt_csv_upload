@@ -12,7 +12,6 @@ class CsvUploadViewTestCase(TestCase):
         self.upload_url = "/api/test/" 
     
     def create_csv_file(self, data):
-        """Helper function to create an in-memory CSV file"""
         df = pd.DataFrame(data)
         csv_buffer = io.StringIO()
         df.to_csv(csv_buffer, index=False)
@@ -20,7 +19,6 @@ class CsvUploadViewTestCase(TestCase):
         return SimpleUploadedFile("test.csv", csv_buffer.getvalue().encode("utf-8"), content_type="text/csv")
 
     def test_upload_valid_csv(self):
-        """Test uploading a valid CSV file"""
         csv_data = [
             {"name": "John Doe", "email": "john@example.com", "age": 30},
             {"name": "Jane Doe", "email": "jane@example.com", "age": 25},
@@ -38,15 +36,15 @@ class CsvUploadViewTestCase(TestCase):
         UserData.objects.create(name="Existing User", email="existing@example.com", age=40)
         
         csv_data = [
-            {"name": "John Doe", "email": "existing@example.com", "age": 30},  # Duplicate
-            {"name": "Jane Doe", "email": "jane@example.com", "age": 25},  # New Entry
+            {"name": "John Doe", "email": "existing@example.com", "age": 30}, 
+            {"name": "Jane Doe", "email": "jane@example.com", "age": 25}, 
         ]
         file = self.create_csv_file(csv_data)
 
         response = self.client.post(self.upload_url, {"file": file}, format="multipart")
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(UserData.objects.count(), 2)  # Only one new entry should be added
+        self.assertEqual(UserData.objects.count(), 2) 
         self.assertEqual(response.data["duplicates"]["count"], 1)
         self.assertIn("existing@example.com", response.data["duplicates"]["duplicate emails"])
 
@@ -69,12 +67,12 @@ class CsvUploadViewTestCase(TestCase):
     def test_upload_invalid_data(self):
         """Test uploading a CSV with invalid data"""
         csv_data = [
-            {"name": "", "email": "invalid-email", "age": "not-a-number"},  # Invalid entries
+            {"name": "", "email": "invalid-email", "age": "not-a-number"},
         ]
         file = self.create_csv_file(csv_data)
 
         response = self.client.post(self.upload_url, {"file": file}, format="multipart")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertGreater(len(response.data["errors"]), 0)  # Errors should be reported
+        self.assertGreater(len(response.data["errors"]), 0) 
 
